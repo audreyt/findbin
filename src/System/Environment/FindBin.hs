@@ -5,11 +5,11 @@ module System.Environment.FindBin
     , getProgPath
     ) where
 
-import Foreign
-import Foreign.C
-import System.Directory
-import System.FilePath
-import System.IO.Unsafe
+import Foreign (Ptr, alloca, peek, peekElemOff)
+import Foreign.C (CInt, CString, peekCString)
+import System.Directory (canonicalizePath, findExecutable)
+import System.FilePath (takeDirectory)
+import System.IO.Unsafe (unsafePerformIO)
 
 {-# NOINLINE __Bin__ #-}
 
