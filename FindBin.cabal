@@ -1,6 +1,7 @@
 name:               FindBin
-version:            0.0.1
-copyright:          2008 Audrey Tang
+version:            0.0.2
+copyright:          2008-2009 Audrey Tang
+homepage:           http://github.com/audreyt/findbin
 license:            BSD3
 license-file:       LICENSE
 author:             Audrey Tang <audreyt@audreyt.org>
@@ -18,3 +19,4 @@ build-depends:      base, directory, filepath
 extra-source-files: README
 hs-source-dirs:     src
 category:           System
+tested-with:        GHC==6.8.2, GHC==6.8.3, GHC==6.10.1
