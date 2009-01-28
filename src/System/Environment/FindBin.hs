@@ -1,0 +1,56 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
+
+module System.Environment.FindBin
+    ( __Bin__
+    , getProgPath
+    ) where
+
+import Foreign
+import Foreign.C
+import System.Directory
+import System.FilePath
+import System.IO.Unsafe
+
+{-# NOINLINE __Bin__ #-}
+
+-- | Unsafe (/constant/) version of 'getProgPath'.
+__Bin__ :: String
+__Bin__ = let path = unsafePerformIO getProgPath
+    in length path `seq` path
+
+-- | Get the full directory to the running program.
+getProgPath :: IO String
+getProgPath = alloca $ \p_argc -> alloca $ \p_argv -> do
+    getProgArgv p_argc p_argv
+    argv <- peek p_argv
+    findBin =<< peekCString =<< peekElemOff argv 0
+    where
+    directoryOf x = do
+        x' <- canonicalizePath x
+        let path = takeDirectory x'
+        return (length path `seq` path)
+    findBin s = case takeDirectory s of
+        ""  -> do
+            -- This should work for ghci as well, as long as nobody name
+            -- their executable file "<interactive>"...
+            rv <- findExecutable s
+            case rv of
+                Just fullName   -> directoryOf fullName
+                _               -> alloca $ \p_argc' -> alloca $ \p_argv' -> do
+                    -- Here we are in the "runghc"/"runhaskell" land.  Fun!
+                    getFullProgArgv p_argc' p_argv'
+                    argc'   <- peek p_argc'
+                    argv'   <- peek p_argv'
+                    s'      <- peekCString =<< peekElemOff argv' (fromEnum argc'-1)
+                    canon   <- canonicalizePath s
+                    canon'  <- canonicalizePath s'
+                    if canon == canon'
+                        then findBin canon
+                        else findBin s'
+        _   -> directoryOf s
+
+foreign import ccall unsafe "getFullProgArgv"
+  getFullProgArgv :: Ptr CInt -> Ptr (Ptr CString) -> IO ()
+
+foreign import ccall unsafe "getProgArgv"
+  getProgArgv :: Ptr CInt -> Ptr (Ptr CString) -> IO ()
