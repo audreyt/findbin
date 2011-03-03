@@ -15,7 +15,7 @@ stability:          Stable
 build-type:         Simple
 extensions:         ForeignFunctionInterface
 exposed-modules:    System.Environment.FindBin
-build-depends:      base, directory, filepath
+build-depends:      base < 5, directory, filepath
 extra-source-files: README
 hs-source-dirs:     src
 category:           System
