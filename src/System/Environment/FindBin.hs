@@ -8,7 +8,7 @@ module System.Environment.FindBin
 import Foreign (Ptr, alloca, peek, peekElemOff)
 import Foreign.C (CInt, CString, peekCString)
 import System.Directory (canonicalizePath, findExecutable)
-import System.FilePath (takeDirectory)
+import System.FilePath (takeDirectory, takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
 
 {-# NOINLINE __Bin__ #-}
@@ -41,7 +41,11 @@ getProgPath = alloca $ \p_argc -> alloca $ \p_argv -> do
                     getFullProgArgv p_argc' p_argv'
                     argc'   <- peek p_argc'
                     argv'   <- peek p_argv'
-                    s'      <- peekCString =<< peekElemOff argv' (fromEnum argc'-1)
+                    prog    <- peekCString =<< peekElemOff argv' 0
+                    s'      <- case (takeBaseName prog) of
+                        "runghc" -> peekCString =<< peekElemOff argv' (fromEnum argc'-1)
+                        "runhaskell" -> peekCString =<< peekElemOff argv' (fromEnum argc'-1)
+                        _ -> return prog
                     canon   <- canonicalizePath s
                     canon'  <- canonicalizePath s'
                     if canon == canon'
