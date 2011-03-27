@@ -23,14 +23,21 @@ getProgPath :: IO String
 getProgPath = alloca $ \p_argc -> alloca $ \p_argv -> do
     getProgArgv p_argc p_argv
     argv <- peek p_argv
-    findBin =<< peekCString =<< peekElemOff argv 0
+    arg0 <- peekCString =<< peekElemOff argv 0
+    case arg0 of
+        "<interactive>" -> alloca $ \p_argc' -> alloca $ \p_argv' -> do
+            getFullProgArgv p_argc' p_argv'
+            argc' <- peek p_argc'
+            argv' <- peek p_argv'
+            findBin =<< peekCString =<< peekElemOff argv' (pred $ fromEnum argc')
+        _ -> do
+            findBin arg0
     where
     directoryOf "" = directoryOf "."
     directoryOf x = do
         x' <- canonicalizePath x
         let path = takeDirectory x'
         return (length path `seq` path)
-    findBin "<interactive>" = findBin ""
     findBin s = case takeDirectory s of
         ""  -> do
             -- This should work for ghci as well, as long as nobody name
